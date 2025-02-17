@@ -1,0 +1,5 @@
+RPi.GPIO
+adafruit-circuitpython-ssd1306
+pillow
+board
+busio
