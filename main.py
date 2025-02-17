@@ -39,6 +39,12 @@ font = ImageFont.load_default()
 pts_A = 0
 pts_B = 0
 
+# Game mode
+multi_rounds = False
+num_rounds = 0
+current_round = 0
+last_player_A_move = None
+
 def set_color(led_pins, color):
     """Turns an RGB LED on with the specified color."""
     GPIO.output(led_pins, (color[0], color[1], color[2]))
@@ -54,9 +60,63 @@ def update_display():
     oled.image(image)
     oled.show()
 
+def show_winner():
+    """Displays the final winner on the OLED screen."""
+    image = Image.new("1", (oled.width, oled.height))
+    draw = ImageDraw.Draw(image)
+
+    if pts_A > pts_B:
+        winner_text = "You Win!!"
+    elif pts_B > pts_A:
+        winner_text = "You loose :c"
+    else:
+        winner_text = "It's a tie!"
+    
+    print(winner_text)
+    draw.text((10, 20), winner_text, font=font, fill=255)
+
+    oled.image(image)
+    oled.show()
+    sleep(3)
+
+    # Init game again
+    GPIO.remove_event_detect(BTN_A)
+    GPIO.remove_event_detect(BTN_B)
+    game()
+
+def play_robot():
+    global last_player_A_move, current_round
+    
+    if not multi_rounds:
+        robot_selection = "r"
+        set_color((LED_B_RED, LED_B_GREEN, LED_B_BLUE), (1, 0, 0))  # Red (betray)
+        return robot_selection
+
+    # Generous Tit for Tat Strategy for multiple rounds
+    if current_round == 1:
+        # First round, cooperate
+        robot_selection = "g"
+        set_color((LED_B_RED, LED_B_GREEN, LED_B_BLUE), (0, 1, 0))  # Green (cooperate)
+        return robot_selection
+
+    if last_player_A_move == "g":
+        # If Player A cooperated, continue cooperating
+        robot_selection = "g"
+        set_color((LED_B_RED, LED_B_GREEN, LED_B_BLUE), (0, 1, 0))  # Green (cooperate)
+    elif last_player_A_move == "r":
+        # If Player A betrayed, retaliate 9 out of 10 times
+        if random.random() < 0.9:  # 90% chance to betray
+            robot_selection = "r"
+            set_color((LED_B_RED, LED_B_GREEN, LED_B_BLUE), (1, 0, 0))  # Red (betray)
+        else:
+            robot_selection = "g"  # 10% chance to forgive
+            set_color((LED_B_RED, LED_B_GREEN, LED_B_BLUE), (0, 1, 0))  # Green (cooperate)
+
+    return robot_selection
+
 def play(color_A):
     """Handles the game logic when a button is pressed."""
-    global pts_A, pts_B
+    global pts_A, pts_B, current_round
 
     # Set LED A color
     if color_A == "g":
@@ -66,8 +126,7 @@ def play(color_A):
         set_color((LED_A_RED, LED_A_GREEN, LED_A_BLUE), (1, 0, 0))  # Red
 
     # Choose a random color for LED B
-    color_B = random.choice(["g", "r"])
-    set_color((LED_B_RED, LED_B_GREEN, LED_B_BLUE), (0, 1, 0) if color_B == "g" else (1, 0, 0))
+    color_B = play_robot()
 
     sleep(2)
 
@@ -105,25 +164,48 @@ def play(color_A):
 
     # Print the current scores
     print(f"Score: Player A - {pts_A}, Player B - {pts_B}")
-
-    # Update scores on OLED display
     update_display()
 
-# Set up button event handlers
-GPIO.add_event_detect(BTN_A, GPIO.FALLING, callback=lambda x: play("g"), bouncetime=300)
-GPIO.add_event_detect(BTN_B, GPIO.FALLING, callback=lambda x: play("r"), bouncetime=300)
+    # Store the current move for the next round
+    last_player_A_move = color_A
 
-print("Hi! Welcome to Prisoner's Dilemma Game")
-print("\n\nSelect game mode: ")
-print("One round (press button G)") # btn_A
-print("Multiple rounds (press button R)") #btn_B
+    if multi_rounds:
+        current_round += 1
+        if current_round >= num_rounds:
+            show_winner()
+            exit()
 
-# @todo
+def select_mode(channel):
+    global multi_rounds, num_rounds, current_round
+    if channel == BTN_A:
+        multi_rounds = False
+        print("Single round mode selected")
+    elif channel == BTN_B:
+        multi_rounds = True
+        num_rounds = random.randint(3, 15)
+        current_round = 0
+        print("Multiple round mode selected (random between 3 to 15)")
+
+    GPIO.remove_event_detect(BTN_A)
+    GPIO.remove_event_detect(BTN_B)
+    GPIO.add_event_detect(BTN_A, GPIO.FALLING, callback=lambda x: play("g"), bouncetime=300)
+    GPIO.add_event_detect(BTN_B, GPIO.FALLING, callback=lambda x: play("r"), bouncetime=300)
+
+def game():
+    print("\n\n Let's start! \n\n")
+    print("\n\nSelect game mode: ")
+    print("One round (press button G)")  # btn_A
+    print("Multiple rounds (press button R)")  # btn_B
+
+    GPIO.add_event_detect(BTN_A, GPIO.FALLING, callback=select_mode, bouncetime=300)
+    GPIO.add_event_detect(BTN_B, GPIO.FALLING, callback=select_mode, bouncetime=300)
+
+print("\n\n ------------------ Hi! Welcome to Prisoner's Dilemma Game ------------------ \n\n")
+game()
 
 try:
     while True:
-        sleep(0.01)
-
+        sleep(1)
 except KeyboardInterrupt:
     print("Exiting...")
     GPIO.cleanup()
