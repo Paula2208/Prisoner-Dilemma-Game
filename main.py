@@ -69,13 +69,13 @@ def play(color_A):
     color_B = random.choice(["g", "r"])
     set_color((LED_B_RED, LED_B_GREEN, LED_B_BLUE), (0, 1, 0) if color_B == "g" else (1, 0, 0))
 
-    sleep(2)  # LEDs remain on for 2 seconds
+    sleep(2)
 
     # Turn off both LEDs
     set_color((LED_A_RED, LED_A_GREEN, LED_A_BLUE), (0, 0, 0))
     set_color((LED_B_RED, LED_B_GREEN, LED_B_BLUE), (0, 0, 0))
 
-    sleep(0.5)  # Pause before next action
+    sleep(0.2)
 
     # Determine the outcome and update scores
     if color_A == "g" and color_B == "g":
@@ -101,19 +101,24 @@ def play(color_A):
         pts_B += 5
 
     sleep(1)
-    set_color((LED_B_RED, LED_B_GREEN, LED_B_BLUE), (0, 0, 0))  # Turn off LED B
+    set_color((LED_B_RED, LED_B_GREEN, LED_B_BLUE), (0, 0, 0))
 
     # Print the current scores
     print(f"Score: Player A - {pts_A}, Player B - {pts_B}")
 
-    # Update OLED display
+    # Update scores on OLED display
     update_display()
 
 # Set up button event handlers
 GPIO.add_event_detect(BTN_A, GPIO.FALLING, callback=lambda x: play("g"), bouncetime=300)
 GPIO.add_event_detect(BTN_B, GPIO.FALLING, callback=lambda x: play("r"), bouncetime=300)
 
-print("Game started. Press the buttons to play.")
+print("Hi! Welcome to Prisoner's Dilemma Game")
+print("\n\nSelect game mode: ")
+print("One round (press button G)") # btn_A
+print("Multiple rounds (press button R)") #btn_B
+
+# @todo
 
 try:
     while True:
@@ -122,3 +127,4 @@ try:
 except KeyboardInterrupt:
     print("Exiting...")
     GPIO.cleanup()
+    print("Bye! See you later :)")
