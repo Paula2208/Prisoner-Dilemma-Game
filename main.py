@@ -116,7 +116,7 @@ def play_robot():
 
 def play(color_A):
     """Handles the game logic when a button is pressed."""
-    global pts_A, pts_B, current_round
+    global pts_A, pts_B, current_round, last_player_A_move
 
     # Set LED A color
     if color_A == "g":
