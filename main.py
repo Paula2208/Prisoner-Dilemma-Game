@@ -197,10 +197,22 @@ def game():
     print("One round (press button G)")  # btn_A
     print("Multiple rounds (press button R)")  # btn_B
 
+    image = Image.new("1", (oled.width, oled.height))
+    draw = ImageDraw.Draw(image)
+
+    draw.text((10, 10), "One round (press button G)", font=font, fill=255)
+    draw.text((10, 30), "Multiple rounds (press button R)", font=font, fill=255)
+
     GPIO.add_event_detect(BTN_A, GPIO.FALLING, callback=select_mode, bouncetime=300)
     GPIO.add_event_detect(BTN_B, GPIO.FALLING, callback=select_mode, bouncetime=300)
 
 print("\n\n ------------------ Hi! Welcome to Prisoner's Dilemma Game ------------------ \n\n")
+image = Image.new("1", (oled.width, oled.height))
+draw = ImageDraw.Draw(image)
+
+draw.text((10, 10), "Hi!", font=font, fill=255)
+draw.text((10, 30), "Welcome to Prisoner's Dilemma Game", font=font, fill=255)
+
 game()
 
 try:
@@ -210,3 +222,7 @@ except KeyboardInterrupt:
     print("Exiting...")
     GPIO.cleanup()
     print("Bye! See you later :)")
+    image = Image.new("1", (oled.width, oled.height))
+    draw = ImageDraw.Draw(image)
+
+    draw.text((10, 10), "Bye! See you later :)", font=font, fill=255)
